@@ -13,8 +13,8 @@ const ROOM_STATUS = Object.freeze({
   PENDING: "PENDING"
 })
 
-const uWS = require("uWebSockets.js");
-const { uuid } = require("uuidv4");
+import uWS from "uWebSockets.js";
+import { uuid } from "uuidv4";
 const port = 3001;
 
 
