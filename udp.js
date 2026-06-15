@@ -76,8 +76,9 @@ server.on('message', (msg, rinfo) => {
 
                 serverMsg = {
                     type: MESSAGE_ENUM.JOIN_ROOM,
+                    senderId: clientMsg?.uuid,
                     body: clientMsg.body,
-                    room
+                    room: room
                 };
 
                 break;
@@ -92,6 +93,7 @@ server.on('message', (msg, rinfo) => {
 
                 serverMsg = {
                     type: MESSAGE_ENUM.START,
+                    senderId: clientMsg?.uuid,
                     body: clientMsg.body,
                     room
                 };
@@ -101,6 +103,7 @@ server.on('message', (msg, rinfo) => {
             case MESSAGE_ENUM.KICK:
                 serverMsg = {
                     type: MESSAGE_ENUM.KICK,
+                    senderId: clientMsg?.uuid,
                     body: clientMsg.body,
                     room
                 };
@@ -112,6 +115,7 @@ server.on('message', (msg, rinfo) => {
             case MESSAGE_ENUM.LEAVE_ROOM:
                 serverMsg = {
                     type: MESSAGE_ENUM.LEAVE_ROOM,
+                    senderId: clientMsg?.uuid,
                     body: clientMsg.body,
                     room
                 };
@@ -132,6 +136,7 @@ server.on('message', (msg, rinfo) => {
         }
 
         for (const member of room.members) {
+            console.log("🚀 ~ serverMsg:", JSON.stringify(serverMsg), member.rinfo_port, member.rinfo_address);
             server.send(JSON.stringify(serverMsg),
                 member.rinfo_port,
                 member.rinfo_address)
