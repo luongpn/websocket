@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:  
+  websocket:
+    image: shop-cloud-websocket:test
+    restart: unless-stopped
+    ports:
+      - 40525:3000
+    network_mode: bridge
+
+networks:
+  default:
+    external:
+      name: bridge

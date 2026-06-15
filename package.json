@@ -1,0 +1,13 @@
+{
+  "name": "luong",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.25.0",
+    "uuidv4": "^6.2.13"
+  },
+  "scripts": {
+    "start": "node index"
+  }
+}
