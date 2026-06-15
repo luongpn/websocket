@@ -57,6 +57,10 @@ server.on('message', (msg, rinfo) => {
                         }]
                     })
                 } else {
+                    const foundMember = room?.members?.find(a => a.uuid == clientMsg?.uuid)
+
+                    if (!foundMember) return;
+
                     socketMap.set(clientMsg.body.roomName, {
                         ...room,
                         members: [...room.members, {
