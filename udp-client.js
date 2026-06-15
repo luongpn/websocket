@@ -5,6 +5,7 @@ import { uuid } from "uuidv4";
 client.send(
     Buffer.from(JSON.stringify({
         body: {
+            roomName: "room1"
         },
         type: "JOIN_ROOM",
         username: "luong",

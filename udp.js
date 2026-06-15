@@ -26,103 +26,114 @@ server.on('listening', () => {
 
 
 server.on('message', (msg, rinfo) => {
-    console.log(
-        `Received: ${msg.toString()} from ${rinfo.address}:${rinfo.port}`
-    );
+    try {
 
-    let clientMsg = JSON.parse(msg.toString());
-    let serverMsg = {};
+        console.log(
+            `Received: ${msg.toString()} from ${rinfo.address}:${rinfo.port}`
+        );
 
-    let room = socketMap.get(clientMsg.body.roomName);
+        let clientMsg = JSON.parse(msg.toString());
+        let serverMsg = {};
 
-    switch (clientMsg.type) {
-        case MESSAGE_ENUM.JOIN_ROOM:
-            if (!room) {
-                socketMap.set(clientMsg.body.roomName, {
-                    masterId: clientMsg?.uuid,
-                    status: ROOM_STATUS.PENDING,
-                    members: [{
-                        username: clientMsg?.username,
-                        uuid: clientMsg?.uuid,
-                        rinfo_port: rinfo.port,
-                        rinfo_address: rinfo.address
-                    }]
-                })
-            } else {
-                socketMap.set(clientMsg.body.roomName, {
+        if (!clientMsg.body?.roomName || !clientMsg?.uuid || !clientMsg?.username) {
+            return;
+        }
+
+        let room = socketMap.get(clientMsg.body.roomName);
+
+
+
+        switch (clientMsg.type) {
+            case MESSAGE_ENUM.JOIN_ROOM:
+                if (!room) {
+                    socketMap.set(clientMsg.body.roomName, {
+                        masterId: clientMsg?.uuid,
+                        status: ROOM_STATUS.PENDING,
+                        members: [{
+                            username: clientMsg?.username,
+                            uuid: clientMsg?.uuid,
+                            rinfo_port: rinfo.port,
+                            rinfo_address: rinfo.address
+                        }]
+                    })
+                } else {
+                    socketMap.set(clientMsg.body.roomName, {
+                        ...room,
+                        members: [...room.members, {
+                            username: clientMsg?.username,
+                            uuid: clientMsg?.uuid,
+                            rinfo_port: rinfo.port,
+                            rinfo_address: rinfo.address
+                        }]
+                    })
+                }
+
+                room = socketMap.get(clientMsg.body.roomName);
+
+                serverMsg = {
+                    type: MESSAGE_ENUM.JOIN_ROOM,
+                    body: clientMsg.body,
+                    room
+                };
+
+                break;
+
+            case MESSAGE_ENUM.START:
+                socketMap.set(clientMsg.body?.roomName, {
                     ...room,
-                    members: [...room.members, {
-                        username: clientMsg?.username,
-                        uuid: clientMsg?.uuid,
-                        rinfo_port: rinfo.port,
-                        rinfo_address: rinfo.address
-                    }]
+                    status: ROOM_STATUS.START,
                 })
-            }
 
-            room = socketMap.get(clientMsg.body.roomName);
+                room = socketMap.get(clientMsg.body?.roomName);
 
-            serverMsg = {
-                type: MESSAGE_ENUM.JOIN_ROOM,
-                body: clientMsg.body,
-                room
-            };
+                serverMsg = {
+                    type: MESSAGE_ENUM.START,
+                    body: clientMsg.body,
+                    room
+                };
 
-            break;
+                break;
 
-        case MESSAGE_ENUM.START:
-            socketMap.set(clientMsg.body.roomName, {
-                ...room,
-                status: ROOM_STATUS.START,
-            })
+            case MESSAGE_ENUM.KICK:
+                serverMsg = {
+                    type: MESSAGE_ENUM.KICK,
+                    body: clientMsg.body,
+                    room
+                };
 
-            room = socketMap.get(clientMsg.body.roomName);
+                room.members = room.members.filter(a => a.uuid != clientMsg?.body?.memberId);
 
-            serverMsg = {
-                type: MESSAGE_ENUM.START,
-                body: clientMsg.body,
-                room
-            };
+                break;
 
-            break;
+            case MESSAGE_ENUM.LEAVE_ROOM:
+                serverMsg = {
+                    type: MESSAGE_ENUM.LEAVE_ROOM,
+                    body: clientMsg.body,
+                    room
+                };
 
-        case MESSAGE_ENUM.KICK:
-            serverMsg = {
-                type: MESSAGE_ENUM.KICK,
-                body: clientMsg.body,
-                room
-            };
+                room.members = room.members.filter(a => a.uuid != clientMsg?.uuid);
 
-            room.members = room.members.filter(a => a.uuid != clientMsg.body.memberId);
+                break;
 
-            break;
+            case MESSAGE_ENUM.SEND_DATA:
+                serverMsg = {
+                    type: MESSAGE_ENUM.SEND_DATA,
+                    senderId: clientMsg?.uuid,
+                    body: clientMsg.body,
+                    room
+                };
 
-        case MESSAGE_ENUM.LEAVE_ROOM:
-            serverMsg = {
-                type: MESSAGE_ENUM.LEAVE_ROOM,
-                body: clientMsg.body,
-                room
-            };
+                break;
+        }
 
-            room.members = room.members.filter(a => a.uuid != clientMsg?.uuid);
+        for (const member of room.members) {
+            server.send(JSON.stringify(serverMsg),
+                member.rinfo_port,
+                member.rinfo_address)
+        }
+    } catch (error) {
 
-            break;
-
-        case MESSAGE_ENUM.SEND_DATA:
-            serverMsg = {
-                type: MESSAGE_ENUM.SEND_DATA,
-                senderId: clientMsg?.uuid,
-                body: clientMsg.body,
-                room
-            };
-
-            break;
-    }
-
-    for (const member of room.members) {
-        server.send(JSON.stringify(serverMsg),
-            member.rinfo_port,
-            member.rinfo_address)
     }
 });
 
